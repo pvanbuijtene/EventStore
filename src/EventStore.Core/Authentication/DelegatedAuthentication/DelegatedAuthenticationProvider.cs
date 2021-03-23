@@ -31,7 +31,7 @@ namespace EventStore.Core.Authentication.DelegatedAuthentication {
 			private readonly AuthenticationRequest _inner;
 
 			public DelegatedAuthenticationRequest(AuthenticationRequest inner)
-				: base(inner.Id, inner.Tokens) {
+				: base(inner.Id, null) {
 				_inner = inner;
 			}
 
@@ -39,7 +39,7 @@ namespace EventStore.Core.Authentication.DelegatedAuthentication {
 
 			public override void Authenticated(ClaimsPrincipal principal) {
 				if (!principal.Identities.Any(identity => identity is DelegatedClaimsIdentity)) {
-					principal.AddIdentity(new DelegatedClaimsIdentity(_inner.Tokens));
+					principal.AddIdentity(new DelegatedClaimsIdentity(null));
 				}
 				_inner.Authenticated(principal);
 			}
