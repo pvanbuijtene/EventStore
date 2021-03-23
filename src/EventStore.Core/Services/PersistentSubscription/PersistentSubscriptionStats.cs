@@ -74,7 +74,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			long parkedMessageCount = _settings.MessageParker.ParkedMessageCount;
 
 			return new MonitoringMessage.SubscriptionInfo() {
-				EventStreamId = _parent.EventStreamId,
+				EventSource = _parent.EventSource,
 				GroupName = _parent.GroupName,
 				Status = _parent.State.ToString(),
 				Connections = connections,
@@ -92,7 +92,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				MinCheckPointCount = _settings.MinCheckPointCount,
 				ReadBatchSize = _settings.ReadBatchSize,
 				ResolveLinktos = _settings.ResolveLinkTos,
-				StartFrom = _settings.StartFrom,
+				StartFrom = _settings.StartFrom.ToString(),
 				ReadBufferCount = _parent.StreamBuffer.ReadBufferCount,
 				RetryBufferCount = _parent.StreamBuffer.RetryBufferCount,
 				LiveBufferCount = _parent.StreamBuffer.LiveBufferCount,

@@ -96,7 +96,7 @@ namespace EventStore.Core.Messages {
 		}
 
 		public class SubscriptionInfo {
-			public string EventStreamId { get; set; }
+			public string EventSource { get; set; }
 			public string GroupName { get; set; }
 			public string Status { get; set; }
 			public List<ConnectionInfo> Connections { get; set; }
@@ -106,7 +106,7 @@ namespace EventStore.Core.Messages {
 			public long LastProcessedEventNumber { get; set; }
 			public long LastKnownMessage { get; set; }
 			public bool ResolveLinktos { get; set; }
-			public long StartFrom { get; set; }
+			public string StartFrom { get; set; }
 			public int MessageTimeoutMilliseconds { get; set; }
 			public bool ExtraStatistics { get; set; }
 			public int MaxRetryCount { get; set; }

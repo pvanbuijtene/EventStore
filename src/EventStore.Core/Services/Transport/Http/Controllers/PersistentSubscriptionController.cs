@@ -487,7 +487,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						stream,
 						groupname,
 						config.ResolveLinktos,
-						config.StartFrom,
+						long.Parse(config.StartFrom),
 						config.MessageTimeoutMilliseconds,
 						config.ExtraStatistics,
 						config.MaxRetryCount,
@@ -551,7 +551,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 						stream,
 						groupname,
 						config.ResolveLinktos,
-						config.StartFrom,
+						long.Parse(config.StartFrom),
 						config.MessageTimeoutMilliseconds,
 						config.ExtraStatistics,
 						config.MaxRetryCount,
@@ -848,20 +848,20 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (message.SubscriptionStats == null) yield break;
 
 			foreach (var stat in message.SubscriptionStats) {
-				string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+				string escapedEventSource = Uri.EscapeDataString(stat.EventSource);
 				string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
 				var info = new SubscriptionInfo {
 					Links = new List<RelLink>() {
 						new RelLink(
 							MakeUrl(manager,
-								string.Format("/subscriptions/{0}/{1}/info", escapedStreamId, escapedGroupName)),
+								string.Format("/subscriptions/{0}/{1}/info", escapedEventSource, escapedGroupName)),
 							"detail"),
 						new RelLink(
 							MakeUrl(manager,
-								string.Format("/subscriptions/{0}/{1}/replayParked", escapedStreamId,
+								string.Format("/subscriptions/{0}/{1}/replayParked", escapedEventSource,
 									escapedGroupName)), "replayParked")
 					},
-					EventStreamId = stat.EventStreamId,
+					EventSource = stat.EventSource,
 					GroupName = stat.GroupName,
 					Status = stat.Status,
 					AverageItemsPerSecond = stat.AveragePerSecond,
@@ -875,9 +875,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					TotalInFlightMessages = stat.TotalInFlightMessages,
 					OutstandingMessagesCount = stat.OutstandingMessagesCount,
 					ParkedMessageUri = MakeUrl(manager,
-						string.Format(parkedMessageUriTemplate, escapedStreamId, escapedGroupName)),
+						string.Format(parkedMessageUriTemplate, escapedEventSource, escapedGroupName)),
 					GetMessagesUri = MakeUrl(manager,
-						string.Format("/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName,
+						string.Format("/subscriptions/{0}/{1}/{2}", escapedEventSource, escapedGroupName,
 							DefaultNumberOfMessagesToGet)),
 					Config = new SubscriptionConfigData {
 						CheckPointAfterMilliseconds = stat.CheckPointAfterMilliseconds,
@@ -924,16 +924,16 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			if (message.SubscriptionStats == null) yield break;
 
 			foreach (var stat in message.SubscriptionStats) {
-				string escapedStreamId = Uri.EscapeDataString(stat.EventStreamId);
+				string escapedEventSource = Uri.EscapeDataString(stat.EventSource);
 				string escapedGroupName = Uri.EscapeDataString(stat.GroupName);
 				var info = new SubscriptionSummary {
 					Links = new List<RelLink>() {
 						new RelLink(
 							MakeUrl(manager,
-								string.Format("/subscriptions/{0}/{1}/info", escapedStreamId, escapedGroupName)),
+								string.Format("/subscriptions/{0}/{1}/info", escapedEventSource, escapedGroupName)),
 							"detail"),
 					},
-					EventStreamId = stat.EventStreamId,
+					EventSource = stat.EventSource,
 					GroupName = stat.GroupName,
 					Status = stat.Status,
 					AverageItemsPerSecond = stat.AveragePerSecond,
@@ -941,9 +941,9 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 					LastKnownEventNumber = stat.LastKnownMessage,
 					LastProcessedEventNumber = stat.LastProcessedEventNumber,
 					ParkedMessageUri = MakeUrl(manager,
-						string.Format(parkedMessageUriTemplate, escapedStreamId, escapedGroupName)),
+						string.Format(parkedMessageUriTemplate, escapedEventSource, escapedGroupName)),
 					GetMessagesUri = MakeUrl(manager,
-						string.Format("/subscriptions/{0}/{1}/{2}", escapedStreamId, escapedGroupName,
+						string.Format("/subscriptions/{0}/{1}/{2}", escapedEventSource, escapedGroupName,
 							DefaultNumberOfMessagesToGet)),
 					TotalInFlightMessages = stat.TotalInFlightMessages,
 				};
@@ -957,7 +957,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public class SubscriptionConfigData {
 			public bool ResolveLinktos { get; set; }
-			public long StartFrom { get; set; }
+			public string StartFrom { get; set; }
 			public int MessageTimeoutMilliseconds { get; set; }
 			public bool ExtraStatistics { get; set; }
 			public int MaxRetryCount { get; set; }
@@ -972,7 +972,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 			public string NamedConsumerStrategy { get; set; }
 
 			public SubscriptionConfigData() {
-				StartFrom = 0;
+				StartFrom = null;
 				MessageTimeoutMilliseconds = 10000;
 				MaxRetryCount = 10;
 				CheckPointAfterMilliseconds = 1000;
@@ -989,7 +989,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 
 		public class SubscriptionSummary {
 			public List<RelLink> Links { get; set; }
-			public string EventStreamId { get; set; }
+			public string EventSource { get; set; }
 			public string GroupName { get; set; }
 			public string ParkedMessageUri { get; set; }
 			public string GetMessagesUri { get; set; }
@@ -1005,7 +1005,7 @@ namespace EventStore.Core.Services.Transport.Http.Controllers {
 		public class SubscriptionInfo {
 			public List<RelLink> Links { get; set; }
 			public SubscriptionConfigData Config { get; set; }
-			public string EventStreamId { get; set; }
+			public string EventSource { get; set; }
 			public string GroupName { get; set; }
 			public string Status { get; set; }
 			public decimal AverageItemsPerSecond { get; set; }
