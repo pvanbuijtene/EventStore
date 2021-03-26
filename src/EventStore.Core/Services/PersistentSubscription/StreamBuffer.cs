@@ -135,10 +135,12 @@ namespace EventStore.Core.Services.PersistentSubscription {
 		}
 
 		public (ResolvedEvent?, long) GetLowestRetry() {
-			long result = long.MaxValue;
-			foreach(var x in _retry){
-				if(!x.IsReplayedEvent)
-					result = Math.Min(result, x.ResolvedEvent.OriginalEventNumber);
+			(ResolvedEvent? @event, long sequenceNumber) result = (null, long.MaxValue);
+			foreach(var x in _retry) {
+				if (x.IsReplayedEvent || !x.EventSequenceNumber.HasValue) continue;
+				if (x.EventSequenceNumber.Value < result.sequenceNumber) {
+					result = (x.ResolvedEvent, x.EventSequenceNumber.Value);
+				}
 			}
 			return result;
 		}
