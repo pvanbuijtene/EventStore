@@ -1,3 +1,5 @@
+using EventStore.Core.Data;
+
 namespace EventStore.Core.Services.PersistentSubscription {
 	public class PersistentSubscriptionSingleStreamEventSource : IPersistentSubscriptionEventSource {
 		public bool FromStream => true;
@@ -8,5 +10,8 @@ namespace EventStore.Core.Services.PersistentSubscription {
 			EventStreamId = eventStreamId;
 		}
 		public override string ToString() => EventStreamId;
+		public IPersistentSubscriptionStreamPosition StreamStartPosition => new PersistentSubscriptionSingleStreamPosition(0L);
+		public IPersistentSubscriptionStreamPosition GetStreamPositionFor(ResolvedEvent @event) => new PersistentSubscriptionSingleStreamPosition(@event.OriginalEventNumber);
+		public IPersistentSubscriptionStreamPosition GetStreamPositionFor(string checkpoint) => new PersistentSubscriptionSingleStreamPosition(long.Parse(checkpoint));
 	}
 }

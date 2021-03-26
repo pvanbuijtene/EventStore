@@ -565,7 +565,7 @@ namespace EventStore.Core.Services.PersistentSubscription {
 				return;
 			}
 
-			subscription.RetrySingleMessage(message.Event);
+			subscription.RetrySingleMessage(message.Event, null);
 			message.Envelope.ReplyWith(new ClientMessage.ReplayMessagesReceived(message.CorrelationId,
 				ClientMessage.ReplayMessagesReceived.ReplayMessagesReceivedResult.Success, ""));
 		}
