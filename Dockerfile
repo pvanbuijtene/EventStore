@@ -8,13 +8,11 @@ COPY ./ci ./
 
 WORKDIR /build/src
 
-COPY ./src/EventStore.sln ./src/*/*.csproj ./src/Directory.Build.* ./
+COPY ./src .
 
 RUN for file in $(ls *.csproj); do mkdir -p ./${file%.*}/ && mv $file ./${file%.*}/; done
 
 RUN dotnet restore --runtime=${RUNTIME}
-
-COPY ./src .
 
 WORKDIR /build/.git
 
