@@ -3,7 +3,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
-using Microsoft.Diagnostics.Tracing.Parsers.Tpl;
 
 namespace EventStore.Core.Tests.Integration {
 	[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -26,6 +25,7 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[Test]
+		[Retry(5)]
 		public void cluster_should_stabilize() {
 			var leaders = 0;
 			var followers = 0;
