@@ -358,6 +358,14 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
 
 			foreach (var prepare in commitedPrepares) {
+				
+				if (isLeader && prepare.LogPosition < _latestEpoch?.EpochPosition) {
+					throw new Exception(
+						$"Position before Epoch position: {prepare.LogPosition} < {_latestEpoch.EpochPosition}");
+				}
+				
+				
+				
 				if (prepare.Flags.HasNoneOf(PrepareFlags.StreamDelete | PrepareFlags.Data))
 					continue;
 
