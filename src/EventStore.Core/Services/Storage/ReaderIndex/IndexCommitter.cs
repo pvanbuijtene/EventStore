@@ -54,7 +54,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private bool _indexRebuild = true;
 		private readonly ICheckpoint _indexChk;
 
-		private bool isLeader = false;
+		private volatile bool isLeader = false;
 		private EpochRecord _latestEpoch;
 
 		public IndexCommitter(IPublisher bus,
