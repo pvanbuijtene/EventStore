@@ -113,6 +113,10 @@ namespace EventStore.Core.Tests.TransactionLog {
 			throw new NotImplementedException();
 		}
 
+		public void StateChanged(SystemMessage.StateChangeMessage message) {
+			
+		}
+
 		public void Close() {
 			throw new NotImplementedException();
 		}

@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Integration {
-	[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	//[TestFixture(typeof(LogFormat.V2), typeof(string))]
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_restarting_one_node_at_a_time<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		protected override async Task Given() {
 			await base.Given();
-
+			
 			for (int i = 0; i < 9; i++) {
 				await _nodes[i % 3].Shutdown(keepDb: true);
 				await Task.Delay(2000);

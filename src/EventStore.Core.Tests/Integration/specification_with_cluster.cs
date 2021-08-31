@@ -4,15 +4,21 @@ using EventStore.ClientAPI;
 using EventStore.Core.Tests.Helpers;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace EventStore.Core.Tests.Integration {
 	public abstract class specification_with_cluster<TLogFormat, TStreamId> : SpecificationWithDirectoryPerTestFixture {
 		protected readonly MiniClusterNode<TLogFormat, TStreamId>[] _nodes = new MiniClusterNode<TLogFormat, TStreamId>[3];
 		protected readonly Endpoints[] _nodeEndpoints = new Endpoints[3];
 		protected IEventStoreConnection _conn;
+		protected bool _captureOutput = true;
 
 		private readonly Dictionary<int, Func<bool, MiniClusterNode<TLogFormat, TStreamId>>> _nodeCreationFactory = new();
 
@@ -64,6 +70,19 @@ namespace EventStore.Core.Tests.Integration {
 		[OneTimeSetUp]
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
+
+			// if (_captureOutput) {
+			// 	var consoleOutputTemplate =
+			// 		"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
+			// 	Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
+			// 	Log.Logger = new LoggerConfiguration()
+			// 		.MinimumLevel.ControlledBy(new LoggingLevelSwitch{ MinimumLevel = LogEventLevel.Verbose })
+			// 		.Enrich.WithProcessId()
+			// 		.Enrich.WithThreadId()
+			// 		.WriteTo.Console(outputTemplate: consoleOutputTemplate)
+			// 		.WriteTo.File(Path.Join(PathName, "log.txt"), outputTemplate: consoleOutputTemplate)
+			// 		.CreateLogger();
+			// }
 
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();
@@ -130,14 +149,19 @@ namespace EventStore.Core.Tests.Integration {
 		public override async Task TestFixtureTearDown() {
 			_conn.Close();
 			await Task.WhenAll(
-				_nodes[0].Shutdown(),
-				_nodes[1].Shutdown(),
-				_nodes[2].Shutdown());
+				_nodes[0].Shutdown(_captureOutput),
+				_nodes[1].Shutdown(_captureOutput),
+				_nodes[2].Shutdown(_captureOutput));
 
-			await base.TestFixtureTearDown();
+			if(!_captureOutput)
+				await base.TestFixtureTearDown();
 		}
 
 		protected static void WaitIdle() {
+		}
+
+		protected void CaptureOutput() {
+			_captureOutput = true;
 		}
 
 		protected MiniClusterNode<TLogFormat, TStreamId> GetLeader() => _nodes.First(x => x.NodeState == Data.VNodeState.Leader);

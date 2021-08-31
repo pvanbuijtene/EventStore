@@ -12,9 +12,13 @@ using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.Chunks;
 using EventStore.Core.Util;
+using Serilog;
+using Serilog.Core;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
-	public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId> {
+	public sealed class ReadIndex<TStreamId> : IDisposable, IReadIndex<TStreamId>,
+		IHandle<SystemMessage.StateChangeMessage>,
+		IHandle<SystemMessage.EpochWritten> {
 		public long LastIndexedPosition {
 			get { return _indexCommitter.LastIndexedPosition; }
 		}
@@ -51,7 +55,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			int hashCollisionReadLimit,
 			bool skipIndexScanOnReads,
 			IReadOnlyCheckpoint replicationCheckpoint,
-			ICheckpoint indexCheckpoint) {
+			ICheckpoint indexCheckpoint, Logger logger=null) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(readerPool, "readerPool");
 			Ensure.NotNull(tableIndex, "tableIndex");
@@ -66,7 +70,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			Ensure.Positive(metastreamMaxCount, "metastreamMaxCount");
 			Ensure.NotNull(replicationCheckpoint, "replicationCheckpoint");
 			Ensure.NotNull(indexCheckpoint, "indexCheckpoint");
-
+			
 			var metastreamMetadata = new StreamMetadata(maxCount: metastreamMaxCount);
 
 			var indexBackend = new IndexBackend<TStreamId>(readerPool, streamInfoCacheCapacity, streamInfoCacheCapacity);
@@ -82,9 +86,18 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			_indexWriter = new IndexWriter<TStreamId>(indexBackend, _indexReader, _streamIds, _streamNames, systemStreams, emptyStreamName, sizer);
 			_indexCommitter = new IndexCommitter<TStreamId>(bus, indexBackend, _indexReader, tableIndex, streamNameIndex, _streamNames,
-				systemStreams, streamExistenceFilter, streamExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks);
+				systemStreams, streamExistenceFilter, streamExistenceFilterInitializer, indexCheckpoint, additionalCommitChecks, logger);
 			_allReader = new AllReader<TStreamId>(indexBackend, _indexCommitter, _streamNames);
 		}
+
+		public void Handle(SystemMessage.StateChangeMessage message) {
+			_indexCommitter.StateChanged(message);
+		}
+
+		public void Handle(SystemMessage.EpochWritten message) {
+			_indexCommitter.EpochWritten(message);
+		}
+
 
 		IndexReadEventResult IReadIndex<TStreamId>.ReadEvent(string streamName, TStreamId streamId, long eventNumber) {
 			return _indexReader.ReadEvent(streamName, streamId, eventNumber);

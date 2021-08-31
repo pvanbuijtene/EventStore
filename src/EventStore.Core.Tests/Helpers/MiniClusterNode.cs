@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using EventStore.Common.Log;
 using EventStore.Common.Options;
 using EventStore.Common.Utils;
 using EventStore.Core.Authentication;
@@ -24,6 +25,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.TestHost;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using ILogger = Serilog.ILogger;
 
 namespace EventStore.Core.Tests.Helpers {
@@ -67,6 +71,7 @@ namespace EventStore.Core.Tests.Helpers {
 			IPEndPoint httpEndPoint, EndPoint[] gossipSeeds, ISubsystem[] subsystems = null, int? chunkSize = null,
 			int? cachedChunkSize = null, bool enableTrustedAuth = false, int memTableSize = 1000, bool inMemDb = true,
 			bool disableFlushToDisk = false, bool readOnlyReplica = false) {
+			
 
 			if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
 				AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
@@ -168,12 +173,23 @@ namespace EventStore.Core.Tests.Helpers {
 				ExternalTcpEndPoint, "ExHTTP ENDPOINT:",
 				HttpEndPoint);
 
+			//Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
+			var consoleOutputTemplate =
+				"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
+			var logger = new LoggerConfiguration()
+				.MinimumLevel.ControlledBy(new LoggingLevelSwitch{ MinimumLevel = LogEventLevel.Verbose })
+				.Enrich.WithProcessId()
+				.Enrich.WithThreadId()
+				.WriteTo.Console(outputTemplate: consoleOutputTemplate)
+				.WriteTo.File(Path.Join(pathname, $"mini-cluster-node-db-{externalTcp.Port}-{httpEndPoint.Port}.log.txt"), outputTemplate: consoleOutputTemplate)
+				.CreateLogger();
+			
 			var logFormatFactory = LogFormatHelper<TLogFormat, TStreamId>.LogFormatFactory;
 			Node = new ClusterVNode<TStreamId>(options, logFormatFactory, new AuthenticationProviderFactory(components =>
 					new InternalAuthenticationProviderFactory(components)),
 				new AuthorizationProviderFactory(components =>
 					new LegacyAuthorizationProviderFactory(components.MainQueue)),
-				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(), Guid.NewGuid(), debugIndex);
+				Array.Empty<IPersistentSubscriptionConsumerStrategyFactory>(), Guid.NewGuid(), debugIndex, logger);
 			Node.HttpService.SetupController(new TestController(Node.MainQueue));
 
 			_host = new WebHostBuilder()

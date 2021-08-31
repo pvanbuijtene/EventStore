@@ -8,6 +8,7 @@ using EventStore.Core.LogV3.FASTER;
 using EventStore.Core.Settings;
 using EventStore.Core.TransactionLog;
 using EventStore.Core.TransactionLog.Checkpoint;
+using Serilog;
 using LogV3StreamId = System.UInt32;
 
 namespace EventStore.Core.LogAbstraction {
@@ -21,6 +22,8 @@ namespace EventStore.Core.LogAbstraction {
 		public TimeSpan StreamExistenceFilterCheckpointInterval { get; init; } = TimeSpan.FromSeconds(30);
 		public TimeSpan StreamExistenceFilterCheckpointDelay { get; init; } = TimeSpan.FromSeconds(5);
 		public Func<TFReaderLease> TFReaderLeaseFactory { get; init; }
+		
+		public ILogger Logger { get; init; }
 	}
 
 	public interface ILogFormatAbstractorFactory<TStreamId> {
@@ -145,7 +148,8 @@ namespace EventStore.Core.LogAbstraction {
 				valueInterval: LogV3SystemStreams.StreamInterval,
 				existenceFilter: existenceFilter,
 				persistence: persistence,
-				metastreams: metastreams);
+				metastreams: metastreams,
+				options.Logger);
 			return streamNameIndex;
 		}
 
@@ -162,7 +166,7 @@ namespace EventStore.Core.LogAbstraction {
 				initialReaderCount: options.InitialReaderCount,
 				maxReaderCount: options.MaxReaderCount,
 				enableReadCache: true,
-				checkpointInterval: TimeSpan.FromSeconds(60));
+				checkpointInterval: TimeSpan.FromSeconds(60), options.Logger);
 			return persistence;
 		}
 

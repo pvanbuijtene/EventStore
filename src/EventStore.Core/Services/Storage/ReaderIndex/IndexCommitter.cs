@@ -13,6 +13,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using ILogger = Serilog.ILogger;
 using EventStore.LogCommon;
+using Serilog.Core;
 
 namespace EventStore.Core.Services.Storage.ReaderIndex {
 	public interface IIndexCommitter {
@@ -25,10 +26,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 	public interface IIndexCommitter<TStreamId> : IIndexCommitter {
 		long Commit(IList<IPrepareLogRecord<TStreamId>> commitedPrepares, bool isTfEof, bool cacheLastEventNumber);
+		void StateChanged(SystemMessage.StateChangeMessage message);
+		void EpochWritten(SystemMessage.EpochWritten message);
 	}
 
 	public abstract class IndexCommitter {
-		public static readonly ILogger Log = Serilog.Log.ForContext<IndexCommitter>();
+		public ILogger Log;// = Serilog.Log.ForContext<IndexCommitter>();
 	}
 
 	public class IndexCommitter<TStreamId> : IndexCommitter, IIndexCommitter<TStreamId> {
@@ -51,8 +54,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		private bool _indexRebuild = true;
 		private readonly ICheckpoint _indexChk;
 
-		public IndexCommitter(
-			IPublisher bus,
+		private bool isLeader = false;
+		private EpochRecord _latestEpoch;
+
+		public IndexCommitter(IPublisher bus,
 			IIndexBackend<TStreamId> backend,
 			IIndexReader<TStreamId> indexReader,
 			ITableIndex<TStreamId> tableIndex,
@@ -62,7 +67,10 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			INameExistenceFilter streamExistenceFilter,
 			INameExistenceFilterInitializer streamExistenceFilterInitializer,
 			ICheckpoint indexChk,
-			bool additionalCommitChecks) {
+			bool additionalCommitChecks, Logger logger=null) {
+
+			Log = logger;
+			
 			_bus = bus;
 			_backend = backend;
 			_indexReader = indexReader;
@@ -75,6 +83,24 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			_indexChk = indexChk;
 			_additionalCommitChecks = additionalCommitChecks;
 		}
+
+		public void StateChanged(SystemMessage.StateChangeMessage message) {
+			Log.Debug($"IndexCommitter: {message.State}");
+
+			if (message.State == VNodeState.Leader) {
+				isLeader = true;
+				Log.Debug($"IndexCommitter:State: {((SystemMessage.BecomeLeader)message).EpochNumber}");
+			} else {
+				isLeader = false;
+			}
+		}
+
+		public void EpochWritten(SystemMessage.EpochWritten message) {
+			Log.Debug($"IndexCommitter: EpochWritten: {message.Epoch}");
+
+			_latestEpoch = message.Epoch;
+		}
+
 
 		public void Init(long buildToPosition) {
 			Log.Information("TableIndex initialization...");
@@ -227,6 +253,13 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 		public long Commit(CommitLogRecord commit, bool isTfEof, bool cacheLastEventNumber) {
 			long eventNumber = EventNumber.Invalid;
 
+
+			if (isLeader && commit.LogPosition < _latestEpoch?.EpochPosition) {
+				throw new Exception(
+					$"Position before Epoch position: {commit.LogPosition} < {_latestEpoch.EpochPosition}");
+			}
+			
+			
 			var lastIndexedPosition = _indexChk.Read();
 			if (commit.LogPosition < lastIndexedPosition || (commit.LogPosition == lastIndexedPosition && !_indexRebuild))
 				return eventNumber; // already committed
@@ -484,7 +517,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			return res.Result == ReadEventResult.Success ? DeserializeSystemSettings(res.Record.Data) : null;
 		}
 
-		private static SystemSettings DeserializeSystemSettings(ReadOnlyMemory<byte> settingsData) {
+		private  SystemSettings DeserializeSystemSettings(ReadOnlyMemory<byte> settingsData) {
 			try {
 				return SystemSettings.FromJsonBytes(settingsData);
 			} catch (Exception exc) {

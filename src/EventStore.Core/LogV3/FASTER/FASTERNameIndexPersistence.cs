@@ -14,7 +14,7 @@ using Value = System.UInt32;
 
 namespace EventStore.Core.LogV3.FASTER {
 	public class NameIndexPersistence {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<NameIndexPersistence>();
+		protected ILogger Log;
 	}
 
 	public class FASTERNameIndexPersistence :
@@ -48,16 +48,17 @@ namespace EventStore.Core.LogV3.FASTER {
 
 		public Value LastValueAdded => _lastValueAdded;
 
-		public FASTERNameIndexPersistence(
-			string indexName,
+		public FASTERNameIndexPersistence(string indexName,
 			string logDir,
-			Value firstValue,
-			Value valueInterval,
+			uint firstValue,
+			uint valueInterval,
 			int initialReaderCount,
 			int maxReaderCount,
 			bool enableReadCache,
-			TimeSpan checkpointInterval) {
-
+			TimeSpan checkpointInterval, ILogger logger=null) {
+			
+			Log = logger;
+			
 			_indexName = indexName;
 			_firstValue = firstValue;
 			_valueInterval = valueInterval;

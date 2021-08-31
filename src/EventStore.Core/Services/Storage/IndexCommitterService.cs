@@ -12,6 +12,7 @@ using EventStore.Core.TransactionLog.Checkpoint;
 using EventStore.Core.TransactionLog.LogRecords;
 using System.Threading.Tasks;
 using EventStore.Core.Index;
+using Serilog.Core;
 using ILogger = Serilog.ILogger;
 
 
@@ -25,7 +26,7 @@ namespace EventStore.Core.Services.Storage {
 	}
 
 	public abstract class IndexCommitterService {
-		protected readonly ILogger Log = Serilog.Log.ForContext<IndexCommitterService>();
+		protected ILogger Log;
 	}
 
 	public class IndexCommitterService<TStreamId> : IndexCommitterService, IIndexCommitterService<TStreamId>,
@@ -33,7 +34,9 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<SystemMessage.BecomeShuttingDown>,
 		IHandle<ReplicationTrackingMessage.ReplicatedTo>,
 		IHandle<StorageMessage.CommitAck>,
-		IHandle<ClientMessage.MergeIndexes> {
+		IHandle<ClientMessage.MergeIndexes>
+		//, IHandle<SystemMessage.StateChangeMessage>
+	{
 		private readonly IIndexCommitter<TStreamId> _indexCommitter;
 		private readonly IPublisher _publisher;
 		private readonly IReadOnlyCheckpoint _replicationCheckpoint;
@@ -64,20 +67,21 @@ namespace EventStore.Core.Services.Storage {
 			get { return _tcs.Task; }
 		}
 
-		public IndexCommitterService(
-			IIndexCommitter<TStreamId> indexCommitter,
+		public IndexCommitterService(IIndexCommitter<TStreamId> indexCommitter,
 			IPublisher publisher,
 			IReadOnlyCheckpoint writerCheckpoint,
 			IReadOnlyCheckpoint replicationCheckpoint,
 			int commitCount,
 			ITableIndex tableIndex,
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager, Logger logger=null) {
 			Ensure.NotNull(indexCommitter, nameof(indexCommitter));
 			Ensure.NotNull(publisher, nameof(publisher));
 			Ensure.NotNull(writerCheckpoint, nameof(writerCheckpoint));
 			Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
 			Ensure.Positive(commitCount, nameof(commitCount));
 
+			Log = logger;
+			
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;
 			_writerCheckpoint = writerCheckpoint;

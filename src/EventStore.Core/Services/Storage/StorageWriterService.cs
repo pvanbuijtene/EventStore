@@ -37,7 +37,7 @@ namespace EventStore.Core.Services.Storage {
 		IHandle<StorageMessage.WriteTransactionEnd>,
 		IHandle<StorageMessage.WriteCommit>,
 		IHandle<MonitoringMessage.InternalStatsRequest> {
-		private static readonly ILogger Log = Serilog.Log.ForContext<StorageWriterService>();
+		private ILogger Log; // = Serilog.Log.ForContext<StorageWriterService>();
 		private static EqualityComparer<TStreamId> StreamIdComparer { get; } = EqualityComparer<TStreamId>.Default;
 
 		protected static readonly int TicksPerMs = (int)(Stopwatch.Frequency / 1000);
@@ -95,7 +95,7 @@ namespace EventStore.Core.Services.Storage {
 			ISystemStreamLookup<TStreamId> systemStreams,
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
-			IPartitionManager partitionManager) {
+			IPartitionManager partitionManager, ILogger logger) {
 			Ensure.NotNull(bus, "bus");
 			Ensure.NotNull(subscribeToBus, "subscribeToBus");
 			Ensure.NotNull(db, "db");
@@ -107,6 +107,8 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(epochManager, "epochManager");
 			Ensure.NotNull(partitionManager, "partitionManager");
 
+			Log = logger;
+			
 			Bus = bus;
 			_subscribeToBus = subscribeToBus;
 			Db = db;
@@ -197,6 +199,8 @@ namespace EventStore.Core.Services.Storage {
 		public virtual void Handle(SystemMessage.StateChangeMessage message) {
 			_vnodeState = message.State;
 
+			Log.Debug($"StateChangeMessage: {message.State}");
+			
 			switch (message.State) {
 				case VNodeState.Leader: {
 						_indexWriter.Reset();
@@ -519,7 +523,7 @@ namespace EventStore.Core.Services.Storage {
 			}
 		}
 
-		private static bool CheckTransactionInfo(long transactionId, TransactionInfo<TStreamId> transactionInfo) {
+		private bool CheckTransactionInfo(long transactionId, TransactionInfo<TStreamId> transactionInfo) {
 			var noStreamId = StreamIdComparer.Equals(transactionInfo.EventStreamId, default);
 			if (transactionInfo.TransactionOffset < -1 || noStreamId) {
 				Log.Error(

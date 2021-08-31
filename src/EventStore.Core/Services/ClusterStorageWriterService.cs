@@ -26,7 +26,7 @@ namespace EventStore.Core.Services {
 		IHandle<ReplicationMessage.CreateChunk>,
 		IHandle<ReplicationMessage.RawChunkBulk>,
 		IHandle<ReplicationMessage.DataChunkBulk> {
-		private static readonly ILogger Log = Serilog.Log.ForContext<ClusterStorageWriterService>();
+		private readonly ILogger Log; // = Serilog.Log.ForContext<ClusterStorageWriterService>();
 
 		private readonly Func<long> _getLastIndexedPosition;
 		private readonly LengthPrefixSuffixFramer _framer;
@@ -48,11 +48,13 @@ namespace EventStore.Core.Services {
 			IEpochManager epochManager,
 			QueueStatsManager queueStatsManager,
 			Func<long> getLastIndexedPosition,
-			IPartitionManager partitionManager)
+			IPartitionManager partitionManager, ILogger logger)
 			: base(bus, subscribeToBus, minFlushDelay, db, writer, indexWriter, recordFactory, streamNameIndex,
-				systemStreams, epochManager, queueStatsManager, partitionManager) {
+				systemStreams, epochManager, queueStatsManager, partitionManager, logger) {
 			Ensure.NotNull(getLastIndexedPosition, "getLastCommitPosition");
 
+			Log = logger;
+			
 			_getLastIndexedPosition = getLastIndexedPosition;
 			_framer = new LengthPrefixSuffixFramer(OnLogRecordUnframed, TFConsts.MaxLogRecordSize);
 

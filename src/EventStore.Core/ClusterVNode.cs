@@ -53,6 +53,7 @@ using EventStore.Plugins.Authentication;
 using EventStore.Plugins.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Mono.Unix.Native;
+using Serilog.Core;
 using ILogger = Serilog.ILogger;
 using MidFunc = System.Func<
 	Microsoft.AspNetCore.Http.HttpContext,
@@ -62,7 +63,8 @@ using MidFunc = System.Func<
 
 namespace EventStore.Core {
 	public abstract class ClusterVNode {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+		//protected static readonly ILogger Log = Serilog.Log.ForContext<ClusterVNode>();
+		protected ILogger Log = null;
 
 		public static ClusterVNode<TStreamId> Create<TStreamId>(
 			ClusterVNodeOptions options,
@@ -213,8 +215,10 @@ namespace EventStore.Core {
 			AuthorizationProviderFactory authorizationProviderFactory = null,
 			IReadOnlyList<IPersistentSubscriptionConsumerStrategyFactory>
 				additionalPersistentSubscriptionConsumerStrategyFactories = null,
-			Guid? instanceId = null, int debugIndex = 0) {
+			Guid? instanceId = null, int debugIndex = 0, Logger logger = null) {
 
+			Log = logger;
+			
 			if (options == null) {
 				throw new ArgumentNullException(nameof(options));
 			}
@@ -627,7 +631,8 @@ namespace EventStore.Core {
 				MaxReaderCount = pTableMaxReaderCount,
 				StreamExistenceFilterSize = options.Database.StreamExistenceFilterSize,
 				StreamExistenceFilterCheckpoint = Db.Config.StreamExistenceFilterCheckpoint,
-				TFReaderLeaseFactory = () => new TFReaderLease(readerPool)
+				TFReaderLeaseFactory = () => new TFReaderLease(readerPool),
+				Logger = logger
 			});
 
 			var tableIndex = new TableIndex<TStreamId>(indexPath,
@@ -666,7 +671,7 @@ namespace EventStore.Core {
 				options.Database.HashCollisionReadLimit,
 				options.Application.SkipIndexScanOnReads,
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
-				Db.Config.IndexCheckpoint);
+				Db.Config.IndexCheckpoint, logger);
 			_readIndex = readIndex;
 			var writer = new TFChunkWriter(Db);
 			var epochManager = new EpochManager(_mainQueue,
@@ -683,6 +688,11 @@ namespace EventStore.Core {
 				NodeInfo.InstanceId);
 			epochManager.Init();
 
+			
+			_mainBus.Subscribe<SystemMessage.StateChangeMessage>(readIndex);
+			_mainBus.Subscribe<SystemMessage.EpochWritten>(readIndex);
+
+			
 			var partitionManager = logFormat.CreatePartitionManager(new TFChunkReader(
 					Db,
 					Db.Config.WriterCheckpoint.AsReadOnly(),
@@ -695,7 +705,7 @@ namespace EventStore.Core {
 				logFormat.StreamNameIndex,
 				logFormat.SystemStreams,
 				epochManager, _queueStatsManager, () => readIndex.LastIndexedPosition,
-				partitionManager); // subscribes internally
+				partitionManager, logger); // subscribes internally
 			AddTasks(storageWriter.Tasks);
 
 			monitoringRequestBus.Subscribe<MonitoringMessage.InternalStatsRequest>(storageWriter);
@@ -728,7 +738,7 @@ namespace EventStore.Core {
 			var indexCommitterService = new IndexCommitterService<TStreamId>(readIndex.IndexCommitter, _mainQueue,
 				Db.Config.WriterCheckpoint.AsReadOnly(),
 				Db.Config.ReplicationCheckpoint.AsReadOnly(),
-				options.Cluster.CommitAckCount, tableIndex, _queueStatsManager);
+				options.Cluster.CommitAckCount, tableIndex, _queueStatsManager, logger);
 
 			AddTask(indexCommitterService.Task);
 

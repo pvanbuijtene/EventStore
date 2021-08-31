@@ -26,7 +26,7 @@ namespace EventStore.Core.LogV3 {
 		INameIndex<Value>,
 		INameIndexConfirmer<Value> {
 
-		private static readonly ILogger Log = Serilog.Log.ForContext<NameIndex>();
+		private readonly ILogger Log;
 		private readonly ConcurrentDictionary<string, Value> _reservations = new();
 		private readonly INameExistenceFilter _existenceFilter;
 		private readonly INameIndexPersistence<Value> _persistence;
@@ -37,13 +37,12 @@ namespace EventStore.Core.LogV3 {
 		private readonly object _nextValueLock = new();
 		private Value _nextValue;
 
-		public NameIndex(
-			string indexName,
-			Value firstValue,
-			Value valueInterval,
+		public NameIndex(string indexName,
+			uint firstValue,
+			uint valueInterval,
 			INameExistenceFilter existenceFilter,
-			INameIndexPersistence<Value> persistence,
-			IMetastreamLookup<Value> metastreams) {
+			INameIndexPersistence<uint> persistence,
+			IMetastreamLookup<uint> metastreams, ILogger logger = null) {
 
 			_indexName = indexName;
 			_firstValue = firstValue;
@@ -52,6 +51,8 @@ namespace EventStore.Core.LogV3 {
 			_existenceFilter = existenceFilter;
 			_persistence = persistence;
 			_metastreams = metastreams;
+
+			Log = logger;
 		}
 
 		public void Dispose() {
@@ -106,10 +107,17 @@ namespace EventStore.Core.LogV3 {
 		// the IndexCommitter behaviour to this method. but the intention is to remove
 		// the use of the old indexes for logv3
 		public void Confirm(IList<IPrepareLogRecord<Value>> prepares, bool catchingUp, IIndexBackend<Value> backend) {
+			
+			Log.Debug($"Confirming {prepares.Count} entries, catchingUp={catchingUp}");
+			
 			for (int i = 0; i < prepares.Count; i++) {
+				
 				var prepare = prepares[i];
 				if (prepare.RecordType == LogRecordType.Stream &&
 					prepare is LogV3StreamRecord streamRecord) {
+					
+					Log.Debug($"Confirm: {i} {streamRecord.StreamName} {streamRecord.StreamNumber}");
+
 					Confirm(
 						name: streamRecord.StreamName,
 						value: streamRecord.StreamNumber);

@@ -107,6 +107,13 @@ namespace EventStore.Core.Tests.Services.IndexCommitter {
 			return 0;
 		}
 
+		public void StateChanged(SystemMessage.StateChangeMessage message) {
+			
+		}
+
+		public void EpochWritten(SystemMessage.EpochWritten message) {
+		}
+
 		public long GetCommitLastEventNumber(CommitLogRecord commit) {
 			return 0;
 		}
