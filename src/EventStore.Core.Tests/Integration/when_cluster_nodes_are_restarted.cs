@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using EventStore.Core.Data;
+using Serilog;
 
 namespace EventStore.Core.Tests.Integration {
 	//[TestFixture(typeof(LogFormat.V2), typeof(string))]
@@ -13,15 +14,38 @@ namespace EventStore.Core.Tests.Integration {
 			await base.Given();
 			
 			for (int i = 0; i < 9; i++) {
-				await _nodes[i % 3].Shutdown(keepDb: true);
+				try {
+					Log.Debug($"### Stopping node {i % 3} i={i}...");
+					await _nodes[i % 3].Shutdown(keepDb: true);
+				} catch (Exception) {
+					Log.Debug($"### Failed to stop node {i % 3} i={i}...");
+					throw;
+				}
 				await Task.Delay(2000);
 				
 				var node = CreateNode(i % 3, _nodeEndpoints[i % 3],
 					new[] {_nodeEndpoints[(i+1)%3].HttpEndPoint, _nodeEndpoints[(i+2)%3].HttpEndPoint});
-				node.Start();
+				
+				try {
+					Log.Debug($"### Starting node {i % 3} i={i}...");
+					node.Start();
+				} catch (Exception) {
+					Log.Debug($"### Failed to start node {i % 3} i={i}...");
+					throw;
+				}
+
 				_nodes[i % 3] = node;
 
-				await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
+				Log.Debug("### Waiting for all nodes to be started...");
+
+				try {
+					await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
+				} catch (System.TimeoutException) {
+					for (int j=0; j < _nodes.Length; j++) {
+						Log.Debug($"### Node {j} is in State: {_nodes[j].NodeState}, Current Node {i%3}");
+					}
+					throw;
+				}
 			}
 		}
 
