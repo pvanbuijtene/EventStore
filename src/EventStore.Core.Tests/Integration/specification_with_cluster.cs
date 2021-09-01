@@ -71,18 +71,18 @@ namespace EventStore.Core.Tests.Integration {
 		public override async Task TestFixtureSetUp() {
 			await base.TestFixtureSetUp();
 
-			// if (_captureOutput) {
-			// 	var consoleOutputTemplate =
-			// 		"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
-			// 	Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
-			// 	Log.Logger = new LoggerConfiguration()
-			// 		.MinimumLevel.ControlledBy(new LoggingLevelSwitch{ MinimumLevel = LogEventLevel.Verbose })
-			// 		.Enrich.WithProcessId()
-			// 		.Enrich.WithThreadId()
-			// 		.WriteTo.Console(outputTemplate: consoleOutputTemplate)
-			// 		.WriteTo.File(Path.Join(PathName, "log.txt"), outputTemplate: consoleOutputTemplate)
-			// 		.CreateLogger();
-			// }
+			if (_captureOutput) {
+				var consoleOutputTemplate =
+					"[{ProcessId,5},{ThreadId,2},{Timestamp:HH:mm:ss.fff},{Level:u3}] {Message}{NewLine}{Exception}";
+				Log.Logger = EventStoreLoggerConfiguration.ConsoleLog;
+				Log.Logger = new LoggerConfiguration()
+					.MinimumLevel.ControlledBy(new LoggingLevelSwitch{ MinimumLevel = LogEventLevel.Verbose })
+					.Enrich.WithProcessId()
+					.Enrich.WithThreadId()
+					.WriteTo.Console(outputTemplate: consoleOutputTemplate)
+					.WriteTo.File(Path.Join(PathName, "mini-cluster-node-db.txt"), outputTemplate: consoleOutputTemplate)
+					.CreateLogger();
+			}
 
 			_nodeEndpoints[0] = new Endpoints();
 			_nodeEndpoints[1] = new Endpoints();

@@ -6,6 +6,7 @@ using EventStore.Core.Data;
 
 namespace EventStore.Core.Tests.Integration {
 	//[TestFixture(typeof(LogFormat.V2), typeof(string))]
+	
 	[TestFixture(typeof(LogFormat.V3), typeof(uint))]
 	public class when_restarting_one_node_at_a_time<TLogFormat, TStreamId> : specification_with_cluster<TLogFormat, TStreamId> {
 		protected override async Task Given() {
@@ -25,7 +26,6 @@ namespace EventStore.Core.Tests.Integration {
 		}
 
 		[Test]
-		[Retry(5)]
 		public void cluster_should_stabilize() {
 			var leaders = 0;
 			var followers = 0;

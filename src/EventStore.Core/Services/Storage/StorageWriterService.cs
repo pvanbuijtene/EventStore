@@ -233,16 +233,25 @@ namespace EventStore.Core.Services.Storage {
 				_vnodeState != VNodeState.PreReadOnlyReplica)
 				throw new Exception(string.Format("{0} appeared in {1} state.", message.GetType().Name, _vnodeState));
 
-			if (Writer.Checkpoint.Read() != Writer.Checkpoint.ReadNonFlushed())
+			var readCheckPoint = Writer.Checkpoint.Read();
+			var readNonFlushedCheckPoint = Writer.Checkpoint.ReadNonFlushed();
+			Log.Debug($"StorageWriteService::WaitForChaserToCatchUp: Writer.Checkpoint.Read={readCheckPoint}, Writer.Checkpoint.ReadNonFlushed={readNonFlushedCheckPoint}");
+			if (readCheckPoint != readNonFlushedCheckPoint)
 				Writer.Flush();
 
 			var sw = Stopwatch.StartNew();
+			var chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
+			var writerCheckpoint = Db.Config.WriterCheckpoint.Read();
+			Log.Debug($"StorageWriteService::WaitForChaserToCatchUp: Db.Config.ChaserCheckpoint={chaserCheckpoint}, Db.Config.WriterCheckpoint={writerCheckpoint}");
 			while (Db.Config.ChaserCheckpoint.Read() < Db.Config.WriterCheckpoint.Read() &&
 				   sw.Elapsed < WaitForChaserSingleIterationTimeout) {
 				Thread.Sleep(1);
 			}
 
-			if (Db.Config.ChaserCheckpoint.Read() == Db.Config.WriterCheckpoint.Read()) {
+			chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
+			writerCheckpoint = Db.Config.WriterCheckpoint.Read();
+			Log.Debug($"StorageWriteService::WaitForChaserToCatchUp: Db.Config.ChaserCheckpoint={chaserCheckpoint}, Db.Config.WriterCheckpoint={writerCheckpoint}");
+			if (chaserCheckpoint == writerCheckpoint) {
 				Bus.Publish(new SystemMessage.ChaserCaughtUp(message.CorrelationId));
 				return;
 			}
