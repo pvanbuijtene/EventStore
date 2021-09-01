@@ -256,7 +256,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 
 			if (isLeader && commit.LogPosition < _latestEpoch?.EpochPosition) {
 				throw new Exception(
-					$"Position before Epoch position: {commit.LogPosition} < {_latestEpoch.EpochPosition}");
+					$"Position before Epoch position: {commit.LogPosition} < {_latestEpoch.EpochPosition} (Commit(CommitLogRecord))");
 			}
 			
 			
@@ -361,7 +361,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 				
 				if (isLeader && prepare.LogPosition < _latestEpoch?.EpochPosition) {
 					throw new Exception(
-						$"Position before Epoch position: {prepare.LogPosition} < {_latestEpoch.EpochPosition}");
+						$"Position before Epoch position: {prepare.LogPosition} < {_latestEpoch.EpochPosition} (Commit(commitedPrepares))");
 				}
 				
 				

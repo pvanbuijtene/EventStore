@@ -18,7 +18,7 @@ using EventStore.LogCommon;
 
 namespace EventStore.Core.Services.Storage {
 	public abstract class StorageChaser {
-		protected static readonly ILogger Log = Serilog.Log.ForContext<StorageChaser>();
+		protected ILogger Log; // = Serilog.Log.ForContext<StorageChaser>();
 	}
 
 	public class StorageChaser<TStreamId> : StorageChaser, IMonitoredQueue,
@@ -64,13 +64,16 @@ namespace EventStore.Core.Services.Storage {
 			ITransactionFileChaser chaser,
 			IIndexCommitterService<TStreamId> indexCommitterService,
 			IEpochManager epochManager,
-			QueueStatsManager queueStatsManager) {
+			QueueStatsManager queueStatsManager, ILogger logger=null) {
 			Ensure.NotNull(leaderBus, "leaderBus");
 			Ensure.NotNull(writerCheckpoint, "writerCheckpoint");
 			Ensure.NotNull(chaser, "chaser");
 			Ensure.NotNull(indexCommitterService, "indexCommitterService");
 			Ensure.NotNull(epochManager, "epochManager");
 
+			Log = logger;
+			
+			
 			_leaderBus = leaderBus;
 			_writerCheckpoint = writerCheckpoint;
 			_chaser = chaser;

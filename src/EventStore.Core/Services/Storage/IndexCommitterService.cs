@@ -112,9 +112,6 @@ namespace EventStore.Core.Services.Storage {
 				StorageMessage.CommitAck replicatedMessage;
 				var msgType = typeof(StorageMessage.CommitAck);
 				while (!_stop) {
-					
-					Thread.Sleep(1000);
-					
 					_addMsgSignal.Reset();
 					if (_replicatedQueue.TryDequeue(out replicatedMessage)) {
 						_queueStats.EnterBusy();
@@ -128,6 +125,8 @@ namespace EventStore.Core.Services.Storage {
 						_queueStats.EnterIdle();
 						_addMsgSignal.Wait(_waitTimeoutMs);
 					}
+					
+					//Thread.Sleep(1000);
 				}
 			} catch (Exception exc) {
 				_queueStats.EnterIdle();

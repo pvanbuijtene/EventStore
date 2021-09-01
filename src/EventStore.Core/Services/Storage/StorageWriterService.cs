@@ -252,6 +252,9 @@ namespace EventStore.Core.Services.Storage {
 			writerCheckpoint = Db.Config.WriterCheckpoint.Read();
 			Log.Debug($"StorageWriteService::WaitForChaserToCatchUp: Db.Config.ChaserCheckpoint={chaserCheckpoint}, Db.Config.WriterCheckpoint={writerCheckpoint}");
 			if (chaserCheckpoint == writerCheckpoint) {
+				
+				Thread.Sleep(1);
+				
 				Bus.Publish(new SystemMessage.ChaserCaughtUp(message.CorrelationId));
 				return;
 			}

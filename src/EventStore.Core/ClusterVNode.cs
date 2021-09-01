@@ -759,7 +759,7 @@ namespace EventStore.Core {
 				chaser,
 				indexCommitterService,
 				epochManager,
-				_queueStatsManager);
+				_queueStatsManager, logger);
 			AddTask(storageChaser.Task);
 
 #if DEBUG
