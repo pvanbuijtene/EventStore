@@ -36,13 +36,14 @@ namespace EventStore.Core.Tests.Integration {
 
 				_nodes[i % 3] = node;
 
-				Log.Debug("### Waiting for all nodes to be started...");
+				Log.Debug($"### Waiting for all nodes to be started i={i}...");
 
 				try {
 					await Task.WhenAll(_nodes.Select(x => x.Started)).WithTimeout(TimeSpan.FromSeconds(30));
 				} catch (System.TimeoutException) {
+					Log.Debug($"### Waiting timed out!!!");
 					for (int j=0; j < _nodes.Length; j++) {
-						Log.Debug($"### Node {j} is in State: {_nodes[j].NodeState}, Current Node {i%3}");
+						Log.Debug($"### Node {j} is in State: {_nodes[j].NodeState}, Current Node {i%3}, i={i}");
 					}
 					throw;
 				}

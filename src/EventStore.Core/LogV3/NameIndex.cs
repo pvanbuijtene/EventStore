@@ -116,7 +116,7 @@ namespace EventStore.Core.LogV3 {
 				if (prepare.RecordType == LogRecordType.Stream &&
 					prepare is LogV3StreamRecord streamRecord) {
 					
-					Log.Debug($"Confirm: {i} {streamRecord.StreamName} {streamRecord.StreamNumber}");
+					Log.Debug($"Confirm: {i} {streamRecord.StreamName} {streamRecord.StreamNumber} LogPosition={prepare.LogPosition}");
 
 					Confirm(
 						name: streamRecord.StreamName,

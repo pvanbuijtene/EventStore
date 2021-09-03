@@ -184,12 +184,14 @@ namespace EventStore.Core.Services.Storage {
 				case LogRecordType.Stream:
 				case LogRecordType.Prepare: {
 					var record = (IPrepareLogRecord<TStreamId>)result.LogRecord;
+					Log.Debug($"StorageChaser: ProcessPrepareRecord:  LogPosition={record.LogPosition}, RecordPostPosition={result.RecordPostPosition}");
 					ProcessPrepareRecord(record, result.RecordPostPosition);
 					break;
 				}
 				case LogRecordType.Commit: {
 					_commitsAfterEof = !result.Eof;
 					var record = (CommitLogRecord)result.LogRecord;
+					Log.Debug($"StorageChaser: ProcessCommitRecord: LogPosition={record.LogPosition}, RecordPostPosition={result.RecordPostPosition}");
 					ProcessCommitRecord(record, result.RecordPostPosition);
 					break;
 				}

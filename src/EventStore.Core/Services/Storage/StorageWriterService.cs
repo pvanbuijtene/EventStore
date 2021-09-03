@@ -247,14 +247,16 @@ namespace EventStore.Core.Services.Storage {
 				   sw.Elapsed < WaitForChaserSingleIterationTimeout) {
 				Thread.Sleep(1);
 			}
-
+			
 			chaserCheckpoint = Db.Config.ChaserCheckpoint.Read();
 			writerCheckpoint = Db.Config.WriterCheckpoint.Read();
 			Log.Debug($"StorageWriteService::WaitForChaserToCatchUp: Db.Config.ChaserCheckpoint={chaserCheckpoint}, Db.Config.WriterCheckpoint={writerCheckpoint}");
 			if (chaserCheckpoint == writerCheckpoint) {
 				
-				Thread.Sleep(1);
-				
+				Log.Debug($"StorageWriteService:: IndexCheckpoint Before Read={Db.Config.IndexCheckpoint.Read()}, ReadNonFlushed={Db.Config.IndexCheckpoint.ReadNonFlushed()}");
+				//Thread.Sleep(3000);
+				Log.Debug($"StorageWriteService:: IndexCheckpoint After Read={Db.Config.IndexCheckpoint.Read()}, ReadNonFlushed={Db.Config.IndexCheckpoint.ReadNonFlushed()}");
+
 				Bus.Publish(new SystemMessage.ChaserCaughtUp(message.CorrelationId));
 				return;
 			}

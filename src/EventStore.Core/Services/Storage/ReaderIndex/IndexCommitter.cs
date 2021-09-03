@@ -357,7 +357,12 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			var indexEntries = new List<IndexKey<TStreamId>>();
 			var prepares = new List<IPrepareLogRecord<TStreamId>>();
 
+			Log.Debug($"Committing {prepares.Count} entries to index");
+			
 			foreach (var prepare in commitedPrepares) {
+				
+				Log.Debug($"Committing to Index: {prepare.LogPosition}");
+				
 				
 				if (isLeader && prepare.LogPosition < _latestEpoch?.EpochPosition) {
 					throw new Exception(

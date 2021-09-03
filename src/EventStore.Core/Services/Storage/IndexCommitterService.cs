@@ -126,7 +126,7 @@ namespace EventStore.Core.Services.Storage {
 						_addMsgSignal.Wait(_waitTimeoutMs);
 					}
 					
-					//Thread.Sleep(1000);
+					//Thread.Sleep(3000);
 				}
 			} catch (Exception exc) {
 				_queueStats.EnterIdle();
