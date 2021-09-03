@@ -69,7 +69,7 @@ namespace EventStore.Core.Services.Storage.ReaderIndex {
 			ICheckpoint indexChk,
 			bool additionalCommitChecks, Logger logger=null) {
 
-			Log = logger;
+			Log = logger ?? Serilog.Log.ForContext<IndexCommitter>();
 			
 			_bus = bus;
 			_backend = backend;

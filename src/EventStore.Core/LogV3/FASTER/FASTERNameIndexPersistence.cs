@@ -57,7 +57,7 @@ namespace EventStore.Core.LogV3.FASTER {
 			bool enableReadCache,
 			TimeSpan checkpointInterval, ILogger logger=null) {
 			
-			Log = logger;
+			Log = logger ?? Serilog.Log.ForContext<FASTERNameIndexPersistence>();
 			
 			_indexName = indexName;
 			_firstValue = firstValue;

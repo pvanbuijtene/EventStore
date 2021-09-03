@@ -80,7 +80,7 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(replicationCheckpoint, nameof(replicationCheckpoint));
 			Ensure.Positive(commitCount, nameof(commitCount));
 
-			Log = logger;
+			Log = logger ?? Serilog.Log.ForContext<IndexCommitterService>();
 			
 			_indexCommitter = indexCommitter;
 			_publisher = publisher;

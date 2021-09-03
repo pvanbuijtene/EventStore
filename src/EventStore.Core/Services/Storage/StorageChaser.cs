@@ -71,7 +71,7 @@ namespace EventStore.Core.Services.Storage {
 			Ensure.NotNull(indexCommitterService, "indexCommitterService");
 			Ensure.NotNull(epochManager, "epochManager");
 
-			Log = logger;
+			Log = logger ?? Serilog.Log.ForContext<StorageChaser>();
 			
 			
 			_leaderBus = leaderBus;
